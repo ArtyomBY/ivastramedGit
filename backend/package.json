@@ -4,7 +4,7 @@
   "description": "Backend for IvastRameds application",
   "main": "src/app.ts",
   "scripts": {
-    "start": "ts-node src/app.ts",
+    "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
     "build": "tsc",
     "lint": "eslint .",
@@ -19,6 +19,7 @@
     "helmet": "^4.6.0",
     "jsonwebtoken": "^8.5.1",
     "mysql2": "^2.3.3",
+    "ts-node": "^10.9.2",
     "winston": "^3.17.0"
   },
   "devDependencies": {
@@ -39,7 +40,6 @@
     "nodemon": "^2.0.12",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
-    "ts-node": "^10.2.1",
     "typescript": "^4.4.3"
   }
 }
