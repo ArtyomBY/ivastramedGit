@@ -1,0 +1,32 @@
+.rbc-event.appointment-scheduled {
+  background-color: #1976d2;
+}
+
+.rbc-event.appointment-completed {
+  background-color: #2e7d32;
+}
+
+.rbc-event.appointment-cancelled {
+  background-color: #d32f2f;
+  text-decoration: line-through;
+}
+
+.rbc-event-content {
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rbc-toolbar button {
+  color: #1976d2;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #1976d2;
+  color: white;
+}
+
+.rbc-today {
+  background-color: #e3f2fd;
+}
