@@ -2,11 +2,11 @@
   "name": "ivastrameds-backend",
   "version": "1.0.0",
   "description": "Backend for IvastRameds application",
-  "main": "dist/app.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "node dist/server.js",
     "build": "tsc",
-    "dev": "nodemon src/app.ts"
+    "dev": "nodemon src/server.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
