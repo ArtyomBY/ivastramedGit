@@ -2,56 +2,63 @@ import { Request, Response } from 'express';
 import { DocumentModel } from '../models/DocumentModel';
 
 export class DocumentController {
-  static async getAllDocuments(req: Request, res: Response) {
+  static async getAllDocuments(req: Request, res: Response): Promise<void> {
     try {
       const documents = await DocumentModel.getAllDocuments();
       res.json(documents);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to retrieve documents.', error });
+      res.status(500).json({ message: 'Failed to retrieve documents.' });
     }
   }
 
-  static async getDocumentById(req: Request, res: Response) {
+  static async getDocumentById(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     try {
       const document = await DocumentModel.getDocumentById(Number(id));
       if (!document) {
-        return res.status(404).json({ message: 'Document not found.' });
+        res.status(404).json({ message: 'Document not found.' });
+        return;
       }
       res.json(document);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to retrieve document.', error });
+      res.status(500).json({ message: 'Failed to retrieve document.' });
     }
   }
 
-  static async createDocument(req: Request, res: Response) {
-    const { title, content, patientId } = req.body;
+  static async createDocument(req: Request, res: Response): Promise<void> {
     try {
-      const documentId = await DocumentModel.createDocument({ title, content, patientId });
-      res.status(201).json({ id: documentId });
+      await DocumentModel.createDocument(req.body);
+      res.status(201).json({ message: 'Document created successfully.' });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to create document.', error });
+      res.status(500).json({ message: 'Failed to create document.' });
     }
   }
 
-  static async updateDocument(req: Request, res: Response) {
+  static async updateDocument(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const { title, content, patientId } = req.body;
     try {
-      await DocumentModel.updateDocument(Number(id), { title, content, patientId });
+      await DocumentModel.updateDocument(Number(id), req.body);
       res.json({ message: 'Document updated successfully.' });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to update document.', error });
+      if (error instanceof Error && error.message === 'Document not found') {
+        res.status(404).json({ message: 'Document not found.' });
+      } else {
+        res.status(500).json({ message: 'Failed to update document.' });
+      }
     }
   }
 
-  static async deleteDocument(req: Request, res: Response) {
+  static async deleteDocument(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     try {
       await DocumentModel.deleteDocument(Number(id));
-      res.json({ message: 'Document deleted successfully.' });
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: 'Failed to delete document.', error });
+      if (error instanceof Error && error.message === 'Document not found') {
+        res.status(404).json({ message: 'Document not found.' });
+      } else {
+        res.status(500).json({ message: 'Failed to delete document.' });
+      }
     }
   }
 }

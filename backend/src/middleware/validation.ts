@@ -1,37 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const validatePatientData = (req: Request, res: Response, next: NextFunction) => {
+export const validatePatientData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, email, dateOfBirth } = req.body;
   if (!firstName || !lastName || !email || !dateOfBirth) {
-    return res.status(400).json({ message: 'Missing required patient data.' });
+    res.status(400).json({ message: 'Missing required patient data.' });
+    return;
   }
-  // Additional validation logic can be added here
   next();
 };
 
-export const validateDoctorData = (req: Request, res: Response, next: NextFunction) => {
+export const validateDoctorData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, email, specialty } = req.body;
   if (!firstName || !lastName || !email || !specialty) {
-    return res.status(400).json({ message: 'Missing required doctor data.' });
+    res.status(400).json({ message: 'Missing required doctor data.' });
+    return;
   }
-  // Additional validation logic can be added here
   next();
 };
 
-export const validateDocumentData = (req: Request, res: Response, next: NextFunction) => {
+export const validateDocumentData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { title, content, patientId } = req.body;
   if (!title || !content || !patientId) {
-    return res.status(400).json({ message: 'Missing required document data.' });
+    res.status(400).json({ message: 'Missing required document data.' });
+    return;
   }
-  // Additional validation logic can be added here
   next();
 };
 
-export const validateMessageData = (req: Request, res: Response, next: NextFunction) => {
-  const { senderId, receiverId, content } = req.body;
-  if (!senderId || !receiverId || !content) {
-    return res.status(400).json({ message: 'Missing required message data.' });
+export const validateMessageData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { content, senderId, receiverId } = req.body;
+  if (!content || !senderId || !receiverId) {
+    res.status(400).json({ message: 'Missing required message data.' });
+    return;
   }
-  // Additional validation logic can be added here
   next();
 };

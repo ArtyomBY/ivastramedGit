@@ -2,56 +2,63 @@ import { Request, Response } from 'express';
 import { PatientModel } from '../models/PatientModel';
 
 export class PatientController {
-  static async getAllPatients(req: Request, res: Response) {
+  static async getAllPatients(req: Request, res: Response): Promise<void> {
     try {
       const patients = await PatientModel.getAllPatients();
       res.json(patients);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to retrieve patients.', error });
+      res.status(500).json({ message: 'Failed to retrieve patients.' });
     }
   }
 
-  static async getPatientById(req: Request, res: Response) {
+  static async getPatientById(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     try {
       const patient = await PatientModel.getPatientById(Number(id));
       if (!patient) {
-        return res.status(404).json({ message: 'Patient not found.' });
+        res.status(404).json({ message: 'Patient not found.' });
+        return;
       }
       res.json(patient);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to retrieve patient.', error });
+      res.status(500).json({ message: 'Failed to retrieve patient.' });
     }
   }
 
-  static async createPatient(req: Request, res: Response) {
-    const { firstName, lastName, email, dateOfBirth } = req.body;
+  static async createPatient(req: Request, res: Response): Promise<void> {
     try {
-      const patientId = await PatientModel.createPatient({ firstName, lastName, email, dateOfBirth });
-      res.status(201).json({ id: patientId });
+      await PatientModel.createPatient(req.body);
+      res.status(201).json({ message: 'Patient created successfully.' });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to create patient.', error });
+      res.status(500).json({ message: 'Failed to create patient.' });
     }
   }
 
-  static async updatePatient(req: Request, res: Response) {
+  static async updatePatient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const { firstName, lastName, email, dateOfBirth } = req.body;
     try {
-      await PatientModel.updatePatient(Number(id), { firstName, lastName, email, dateOfBirth });
+      await PatientModel.updatePatient(Number(id), req.body);
       res.json({ message: 'Patient updated successfully.' });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to update patient.', error });
+      if (error instanceof Error && error.message === 'Patient not found') {
+        res.status(404).json({ message: 'Patient not found.' });
+      } else {
+        res.status(500).json({ message: 'Failed to update patient.' });
+      }
     }
   }
 
-  static async deletePatient(req: Request, res: Response) {
+  static async deletePatient(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     try {
       await PatientModel.deletePatient(Number(id));
-      res.json({ message: 'Patient deleted successfully.' });
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: 'Failed to delete patient.', error });
+      if (error instanceof Error && error.message === 'Patient not found') {
+        res.status(404).json({ message: 'Patient not found.' });
+      } else {
+        res.status(500).json({ message: 'Failed to delete patient.' });
+      }
     }
   }
 }
