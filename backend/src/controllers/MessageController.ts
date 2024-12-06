@@ -11,18 +11,19 @@ export class MessageController {
     }
   }
 
-  static async getMessageById(req: Request, res: Response) {
+  static async getMessageById(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     try {
-      const message = await MessageModel.getMessageById(Number(id));
-      if (!message) {
-        return res.status(404).json({ message: 'Message not found.' });
-      }
-      res.json(message);
+        const message = await MessageModel.getMessageById(Number(id));
+        if (!message) {
+            res.status(404).json({ message: 'Message not found.' });
+            return;
+        }
+        res.json(message);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to retrieve message.', error });
+        res.status(500).json({ message: 'Failed to retrieve message.', error });
     }
-  }
+}
 
   static async createMessage(req: Request, res: Response) {
     const { senderId, receiverId, content } = req.body;

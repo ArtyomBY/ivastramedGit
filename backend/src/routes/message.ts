@@ -9,7 +9,9 @@ const router = express.Router();
 router.get('/', authenticate, MessageController.getAllMessages);
 
 // Маршрут для получения сообщения по ID
-router.get('/:id', authenticate, MessageController.getMessageById);
+router.get('/:id', authenticate, (req, res, next) => {
+    MessageController.getMessageById(req, res).catch(next);
+});
 
 // Маршрут для создания нового сообщения
 router.post('/', authenticate, validateMessageData, MessageController.createMessage);

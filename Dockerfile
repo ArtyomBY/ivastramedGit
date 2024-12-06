@@ -37,9 +37,10 @@ COPY backend/package*.json ./backend/
 
 # Set production environment
 ENV NODE_ENV=production
+ENV PORT=3000
 
 # Expose the port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the backend server which will serve both API and static frontend
+CMD ["node", "backend/dist/server.js"]
