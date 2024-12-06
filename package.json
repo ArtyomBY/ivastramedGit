@@ -27,6 +27,8 @@
     "ajv-keywords": "^5.1.0",
     "axios": "^1.7.8",
     "chart.js": "^4.4.7",
+    "cors": "^2.8.5",
+    "@types/cors": "^2.8.17",
     "date-fns": "2.30.0",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
