@@ -1,22 +1,41 @@
-# Use an official Node.js runtime as a parent image
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine as builder
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps && npm cache clean --force;
+# Install dependencies with specific flags for production
+RUN npm ci --only=production --legacy-peer-deps \
+    && npm cache clean --force
 
-# Copy the rest of the application code
-COPY . .
+# Copy only necessary files
+COPY tsconfig.json ./
+COPY src ./src
+COPY public ./public
+
+# Set Node options for build
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Build the application
 RUN npm run build
 
-# Expose the port the app runs on
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy only the built files and production dependencies
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose the port
 EXPOSE 3000
 
 # Start the application
