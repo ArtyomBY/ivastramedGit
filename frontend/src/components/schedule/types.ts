@@ -1,4 +1,9 @@
-import { AppointmentType, AppointmentStatus } from '../../types/medical';
+import { 
+  Appointment as GlobalAppointment, 
+  AppointmentType, 
+  AppointmentStatus, 
+  CommonStatus 
+} from '../../types/medical';
 
 export const APPOINTMENT_DURATION = 30; // длительность приёма в минутах
 
@@ -12,9 +17,30 @@ export interface Appointment {
   startTime: string;
   endTime: string;
   type: AppointmentType;
-  status: AppointmentStatus;
+  status: CommonStatus;
   notes: string;
   description: string;
+  followUpDate?: string;
+}
+
+// Утилита для преобразования глобального типа в локальный
+export function convertToLocalAppointment(
+  globalAppointment: Omit<GlobalAppointment, 'id'>
+): Omit<Appointment, 'id'> {
+  return {
+    patientId: globalAppointment.patientId || '',
+    patientName: globalAppointment.patientName || '',
+    doctorId: globalAppointment.doctorId,
+    doctorName: globalAppointment.doctorName,
+    date: globalAppointment.date,
+    startTime: globalAppointment.startTime,
+    endTime: globalAppointment.endTime,
+    type: globalAppointment.type,
+    status: globalAppointment.status as CommonStatus,
+    notes: globalAppointment.notes || '',
+    description: globalAppointment.description || '',
+    followUpDate: globalAppointment.followUpDate
+  };
 }
 
 export type { AppointmentType, AppointmentStatus };

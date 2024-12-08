@@ -17,7 +17,15 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/calendar.css';
 import { useAppointments } from '../../contexts/AppointmentsContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Doctor, Appointment, Visit } from '../../types/medical';
+import { 
+  Appointment as GlobalAppointment, 
+  Doctor, 
+  Visit 
+} from '../../types/medical';
+import { 
+  Appointment, 
+  convertToLocalAppointment 
+} from './types';
 import AppointmentDialog, { AppointmentDialogProps } from '../../components/appointments/AppointmentDialog';
 
 const localizer = dateFnsLocalizer({
@@ -42,19 +50,7 @@ const DoctorSchedule: React.FC<DoctorScheduleProps> = ({ doctor }) => {
   const handleEventClick = (event: any) => {
     const appointment = appointments.find(a => a.id === event.id);
     if (appointment) {
-      setSelectedAppointment({
-        id: appointment.id,
-        date: appointment.date,
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        status: appointment.status,
-        doctorId: appointment.doctorId,
-        patientId: appointment.patientId,
-        type: appointment.type,
-        notes: appointment.notes,
-        doctorName: appointment.doctorName,
-        patientName: appointment.patientName
-      });
+      setSelectedAppointment(convertToLocalAppointment(appointment));
       setIsDialogOpen(true);
     }
   };
@@ -77,29 +73,37 @@ const DoctorSchedule: React.FC<DoctorScheduleProps> = ({ doctor }) => {
     setSelectedAppointment(undefined);
   };
 
-  const handleAppointmentSave = (data: Partial<Appointment | Visit>) => {
-    const appointmentData = data as Partial<Appointment>;
-    if (appointmentData.type && appointmentData.status) {
-      const newAppointment: Appointment = {
-        id: appointmentData.id || String(Date.now()),
-        patientId: appointmentData.patientId || '',
-        patientName: appointmentData.patientName || '',
+  const handleAppointmentSave = (data: Partial<Appointment>) => {
+    if (data.type && data.status) {
+      const newAppointment = {
+        patientId: data.patientId || '', // Принудительно преобразуем к строке
+        patientName: data.patientName || '', // Принудительно преобразуем к строке
         doctorId: doctor.id,
         doctorName: `${doctor.firstName} ${doctor.lastName}`,
-        date: appointmentData.date || format(new Date(), 'yyyy-MM-dd'),
-        startTime: appointmentData.startTime || format(new Date(), 'HH:mm'),
-        endTime: appointmentData.endTime || format(addMinutes(new Date(), 30), 'HH:mm'),
-        type: appointmentData.type,
-        status: appointmentData.status,
-        notes: appointmentData.notes || '',
-        description: appointmentData.description || '',
-      };
-      if (appointmentData.id) {
-        updateAppointment(appointmentData.id, newAppointment);
-      } else {
-        addAppointment(newAppointment);
+        date: data.date || format(new Date(), 'yyyy-MM-dd'),
+        startTime: typeof data.startTime === 'string'
+          ? data.startTime 
+          : data.startTime ? format(data.startTime, 'HH:mm') : format(new Date(), 'HH:mm'),
+        endTime: typeof data.endTime === 'string'
+          ? data.endTime
+          : data.endTime ? format(data.endTime, 'HH:mm') : format(addMinutes(new Date(), 30), 'HH:mm'),
+        type: data.type || 'Первичный приём', // Добавляем значение по умолчанию
+        status: data.status || 'Запланирован',
+        notes: data.notes || '', 
+        description: data.description || '', 
+        followUpDate: data.followUpDate || undefined // Явно указываем undefined
+      } as Omit<GlobalAppointment, 'id'>; // Принудительное приведение типа
+
+      try {
+        if (data.id) {
+          updateAppointment(data.id, newAppointment);
+        } else {
+          addAppointment(convertToLocalAppointment(newAppointment));
+        }
+        handleDialogClose();
+      } catch (error) {
+        console.error('Ошибка при сохранении приёма:', error);
       }
-      handleDialogClose();
     }
   };
 

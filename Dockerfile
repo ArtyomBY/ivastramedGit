@@ -1,25 +1,35 @@
-# Build stage
-FROM node:18-alpine AS build
+# Build stage for frontend
+FROM node:18-alpine AS frontend-build
 
-WORKDIR /app
+WORKDIR /app/frontend
 
-# Install global dependencies
-RUN npm install -g npm@latest
+# Copy frontend package files
+COPY frontend/package*.json ./
 
-# Copy package files
-COPY package*.json ./
-COPY frontend/package*.json ./frontend/
-COPY backend/package*.json ./backend/
-
-# Install root dependencies
+# Install frontend dependencies
 RUN npm install
 
-# Copy entire project
-COPY . .
+# Copy frontend source
+COPY frontend ./
 
 # Build frontend
-WORKDIR /app/frontend
+RUN npm run build
+
+# Build stage for backend
+FROM node:18-alpine AS backend-build
+
+WORKDIR /app/backend
+
+# Copy backend package files
+COPY backend/package*.json ./
+
+# Install backend dependencies
 RUN npm install
+
+# Copy backend source
+COPY backend ./
+
+# Build backend
 RUN npm run build
 
 # Production stage
@@ -27,16 +37,21 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy built artifacts
-COPY --from=build /app/frontend/build ./frontend/build
-COPY --from=build /app/package*.json ./
-COPY --from=build /app/node_modules ./node_modules
+# Copy frontend build
+COPY --from=frontend-build /app/frontend/build ./frontend/build
 
-# Install serve for hosting static files
+# Copy backend build and dependencies
+COPY --from=backend-build /app/backend/dist ./backend/dist
+COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+
+# Copy root package.json for scripts
+COPY package*.json ./
+
+# Install serve for frontend
 RUN npm install -g serve
 
-# Expose port
-EXPOSE 3000
+# Expose ports
+EXPOSE 3000 5000
 
 # Start command
-CMD ["serve", "-s", "frontend/build", "-l", "3000"]
+CMD ["npm", "run", "start:frontend"]

@@ -15,14 +15,19 @@ export class NotificationService {
     appointment: Appointment,
     now: Date = new Date()
   ): Notification | null {
+    // Преобразуем startTime в объект Date, если это строка
+    const startTime = typeof appointment.startTime === 'string' 
+      ? new Date(appointment.startTime) 
+      : appointment.startTime;
+
     // Проверяем только предстоящие приёмы
-    if (isBefore(appointment.startTime, now)) {
+    if (isBefore(startTime, now)) {
       return null;
     }
 
     // Проверяем каждый интервал напоминания
     for (const interval of this.REMINDER_INTERVALS) {
-      const reminderTime = addMinutes(appointment.startTime, -interval.minutes);
+      const reminderTime = addMinutes(startTime, -interval.minutes);
       
       // Если текущее время попадает в минутный интервал для напоминания
       if (isWithinInterval(now, {
@@ -33,7 +38,7 @@ export class NotificationService {
           id: `reminder-${appointment.id}-${interval.minutes}`,
           type: 'appointmentReminder' as NotificationType,
           title: 'Напоминание о приёме',
-          message: `Приём ${interval.message} в ${format(new Date(appointment.startTime), 'HH:mm', { locale: ru })}`,
+          message: `Приём ${interval.message} в ${format(startTime, 'HH:mm', { locale: ru })}`,
           date: now,
           read: false,
           relatedEntityId: appointment.id,

@@ -1,11 +1,8 @@
 export type TestStatus = 'Назначен' | 'В работе' | 'Выполнен' | 'Отменён';
-export type VisitStatus = 'Назначен' | 'Завершен' | 'Отменен';
+export type VisitStatus = 'Назначен' | 'В процессе' | 'Завершен' | 'Отменен';
 export type RecordStatus = 'Активный' | 'Завершен' | 'Отменен';
 export type TestType = 'Анализ крови' | 'Анализ мочи' | 'УЗИ' | 'Рентген' | 'МРТ' | 'КТ' | 'ЭКГ' | 'Другое';
 export type LabTestStatus = 'Назначен' | 'В процессе' | 'Завершен' | 'Отменен';
-export type AppointmentType = 'Первичный приём' | 'Повторный приём' | 'Экстренный приём' | 'Процедура';
-export type VisitType = 'Осмотр' | 'Процедура' | 'Консультация' | 'Диагностика';
-export type AppointmentStatus = 'Запланирован' | 'Подтвержден' | 'Завершен' | 'Отменен';
 
 export interface MedicalRecord {
   id: string;
@@ -31,6 +28,49 @@ export interface LabTest {
   notes?: string;
 }
 
+export type AppointmentType = 
+  | 'Первичный приём' 
+  | 'Повторный приём' 
+  | 'Экстренный приём' 
+  | 'Процедура' 
+  | 'Осмотр' 
+  | 'Консультация' 
+  | 'Диагностика';
+
+export type VisitType = 
+  | 'Осмотр' 
+  | 'Процедура' 
+  | 'Консультация' 
+  | 'Диагностика';
+
+export type CommonStatus = 
+  | 'Запланирован' 
+  | 'Подтвержден' 
+  | 'Отменен' 
+  | 'Завершен' 
+  | 'Назначен' 
+  | 'В процессе';
+
+export type AppointmentStatus = CommonStatus;
+
+export interface AppointmentFormData {
+  id?: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: AppointmentType;
+  status: AppointmentStatus;
+  diagnosis?: string[];
+  treatment?: string;
+  notes?: string;
+  description?: string;
+  followUpDate?: string;
+}
+
 export interface BaseAppointment {
   id: string;
   patientId: string;
@@ -40,21 +80,25 @@ export interface BaseAppointment {
   date: string;
   startTime: string;
   endTime: string;
-  notes: string;
-  description: string;
+  followUpDate?: string;
 }
 
 export interface Appointment extends BaseAppointment {
   type: AppointmentType;
   status: AppointmentStatus;
+  diagnosis?: string[];
+  treatment?: string;
+  notes?: string;
+  description?: string;
 }
 
 export interface Visit extends BaseAppointment {
   type: VisitType;
-  status: VisitStatus;
+  status: CommonStatus;
   diagnosis?: string[];
   treatment?: string;
-  followUpDate?: string;
+  notes?: string;
+  description?: string;
 }
 
 export interface Patient {

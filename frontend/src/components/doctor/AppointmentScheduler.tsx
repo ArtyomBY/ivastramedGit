@@ -70,6 +70,17 @@ const AppointmentScheduler: React.FC<AppointmentSchedulerProps> = ({ viewMode = 
     };
   };
 
+  const formatTimeRange = (startTime: string | Date, endTime: string | Date) => {
+    const start = typeof startTime === 'string' 
+      ? startTime 
+      : moment(startTime).format('HH:mm');
+    const end = typeof endTime === 'string' 
+      ? endTime 
+      : moment(endTime).format('HH:mm');
+  
+    return `${start} - ${end}`;
+  };
+
   const calendarEvents = appointments.map(appointment => {
     const startDate = moment(`${appointment.date} ${appointment.startTime}`, 'YYYY-MM-DD HH:mm').toDate();
     const endDate = moment(`${appointment.date} ${appointment.endTime}`, 'YYYY-MM-DD HH:mm').toDate();
@@ -132,7 +143,9 @@ const AppointmentScheduler: React.FC<AppointmentSchedulerProps> = ({ viewMode = 
           {selectedEvent && (
             <Box>
               <Typography variant="h6">Пациент: {selectedEvent.patientName}</Typography>
-              <Typography>Время: {selectedEvent.startTime} - {selectedEvent.endTime}</Typography>
+              <Typography>
+                Время: {formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}
+              </Typography>
               <Typography>Тип: {selectedEvent.type}</Typography>
               <Typography>Статус: {selectedEvent.status}</Typography>
               <Typography>Описание: {selectedEvent.description}</Typography>

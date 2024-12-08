@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,25 +27,178 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { ru } from 'date-fns/locale';
 import { format, parse, addMinutes, isAfter, isBefore, isEqual } from 'date-fns';
-import { Appointment, Doctor, Visit, AppointmentType, VisitType, AppointmentStatus, VisitStatus, BaseAppointment } from '../../types/medical';
+import { 
+  Appointment, 
+  Visit, 
+  AppointmentFormData, 
+  AppointmentType, 
+  VisitType, 
+  AppointmentStatus, 
+  VisitStatus, 
+  Doctor, 
+  Patient, 
+  CommonStatus
+} from '../../types/medical';
 import CloseIcon from '@mui/icons-material/Close';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { NotificationService } from '../../services/notificationService';
 
-interface Patient {
-  id: string;
-  firstName: string;
-  lastName: string;
-  middleName: string;
-  birthDate: Date;
-  gender: 'male' | 'female';
-  phone: string;
-  email: string;
+// Определение типов вне компонента для предотвращения дублирования
+const MEDICAL_ENTITY_TYPES = [
+  'Первичный приём', 
+  'Повторный приём', 
+  'Экстренный приём', 
+  'Процедура', 
+  'Осмотр', 
+  'Консультация', 
+  'Диагностика'
+] as const;
+
+type MedicalEntityType = typeof MEDICAL_ENTITY_TYPES[number];
+
+// Расширенный интерфейс формы с необязательными полями
+interface ExtendedAppointmentFormData {
+  id?: string;
+  patientId: string | undefined;
+  patientName: string | undefined;
+  doctorId: string | undefined;
+  doctorName: string | undefined;
+  date: string | undefined;
+  startTime: string | undefined;
+  endTime: string | undefined;
+  type?: AppointmentType | VisitType;
+  status?: AppointmentStatus | VisitStatus;
+  diagnosis?: string[];
+  treatment?: string;
+  notes?: string;
+  description?: string;
 }
 
-const APPOINTMENT_TYPES: AppointmentType[] = ['Первичный приём', 'Повторный приём', 'Экстренный приём', 'Процедура'];
-const VISIT_TYPES: VisitType[] = ['Осмотр', 'Процедура', 'Консультация', 'Диагностика'];
+// Функция для безопасного преобразования типов
+const convertToVisit = (data: Partial<Appointment | Visit>): Visit => {
+  // Преобразуем статус к общему типу
+  const convertStatus = (status?: AppointmentStatus | VisitStatus): CommonStatus => {
+    const validStatuses: CommonStatus[] = [
+      'Запланирован', 'Подтвержден', 'Отменен', 'Завершен', 
+      'Назначен', 'В процессе'
+    ];
+    
+    return validStatuses.includes(status as CommonStatus) 
+      ? status as CommonStatus 
+      : 'Назначен';
+  };
+
+  const baseVisit: Visit = {
+    id: data.id || '',
+    patientId: data.patientId || '',
+    patientName: data.patientName || '',
+    doctorId: data.doctorId || '',
+    doctorName: data.doctorName || '',
+    date: data.date || '',
+    startTime: data.startTime || '',
+    endTime: data.endTime || '',
+    type: (data.type as VisitType) || 'Осмотр',
+    status: convertStatus(data.status),
+    diagnosis: Array.isArray(data.diagnosis) ? data.diagnosis : [],
+    treatment: data.treatment || '',
+    notes: data.notes || '', // Обязательное строковое поле
+    description: data.description || '', // Обязательное строковое поле
+    followUpDate: data.followUpDate
+  };
+
+  return baseVisit;
+};
+
+const convertToAppointment = (data: Partial<Appointment | Visit>): Appointment => {
+  // Преобразуем статус к AppointmentStatus
+  const convertStatus = (status?: AppointmentStatus | VisitStatus): AppointmentStatus => {
+    const appointmentStatusMap: Record<string, AppointmentStatus> = {
+      'Назначен': 'Запланирован',
+      'В процессе': 'Подтвержден',
+      'Завершен': 'Завершен',
+      'Отменен': 'Отменен'
+    };
+    
+    return appointmentStatusMap[status as string] || 'Запланирован';
+  };
+
+  const baseAppointment: Appointment = {
+    id: data.id || '',
+    patientId: data.patientId || '',
+    patientName: data.patientName || '',
+    doctorId: data.doctorId || '',
+    doctorName: data.doctorName || '',
+    date: data.date || '',
+    startTime: data.startTime || '',
+    endTime: data.endTime || '',
+    type: (data.type as AppointmentType) || 'Первичный приём',
+    status: convertStatus(data.status),
+    diagnosis: Array.isArray(data.diagnosis) ? data.diagnosis : [],
+    treatment: data.treatment || '',
+    notes: data.notes || '', 
+    description: data.description || '', 
+  };
+
+  return baseAppointment;
+};
+
+// Функция для определения типа сущности
+const determineMedicalEntityType = (
+  type?: string
+): { 
+  isAppointment: boolean, 
+  isVisit: boolean, 
+  processedType: MedicalEntityType 
+} => {
+  const appointmentTypes: MedicalEntityType[] = [
+    'Первичный приём', 
+    'Повторный приём', 
+    'Экстренный приём', 
+    'Процедура', 
+    'Осмотр', 
+    'Консультация', 
+    'Диагностика'
+  ];
+
+  const visitTypes: MedicalEntityType[] = [
+    'Осмотр', 
+    'Процедура', 
+    'Консультация', 
+    'Диагностика'
+  ];
+
+  if (!type) {
+    return {
+      isAppointment: true,
+      isVisit: false,
+      processedType: 'Первичный приём'
+    };
+  }
+
+  const processedType = type as MedicalEntityType;
+
+  return {
+    isAppointment: appointmentTypes.includes(processedType),
+    isVisit: visitTypes.includes(processedType),
+    processedType
+  };
+};
+
+const APPOINTMENT_TYPES: AppointmentType[] = [
+  'Первичный приём', 
+  'Повторный приём', 
+  'Экстренный приём', 
+  'Процедура'
+];
+
+const VISIT_TYPES: VisitType[] = [
+  'Осмотр', 
+  'Процедура', 
+  'Консультация', 
+  'Диагностика'
+];
+
 const APPOINTMENT_DURATIONS = [
   { value: 15, label: '15 минут' },
   { value: 30, label: '30 минут' },
@@ -67,45 +220,67 @@ export interface AppointmentDialogProps {
   loading?: boolean;
 }
 
-interface AppointmentFormData extends Partial<BaseAppointment> {
-  startTime?: string;
-  endTime?: string;
-  type?: AppointmentType | VisitType;
-  status?: AppointmentStatus | VisitStatus;
-  diagnosis?: string[];
-  treatment?: string;
-}
-
 const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   open,
   onClose,
   onSave,
   initialData,
   doctor,
-  patientId,
-  doctorId,
+  patientId: initialPatientId,
+  doctorId: initialDoctorId,
   mode = 'appointment',
-  loading = false,
+  loading = false
 }) => {
-  const [formData, setFormData] = useState<AppointmentFormData>({
+  // Инициализация состояния с учетом необязательных полей
+  const [formData, setFormData] = useState<ExtendedAppointmentFormData>({
+    patientId: initialPatientId || undefined,
+    patientName: undefined,
+    doctorId: initialDoctorId || (doctor?.id),
+    doctorName: doctor ? `${doctor.firstName} ${doctor.lastName}` : undefined,
     date: format(new Date(), 'yyyy-MM-dd'),
-    type: mode === 'appointment' ? APPOINTMENT_TYPES[0] : VISIT_TYPES[0],
+    startTime: format(new Date(), 'HH:mm'),
+    endTime: format(addMinutes(new Date(), 30), 'HH:mm'),
+    type: mode === 'appointment' ? 'Первичный приём' : 'Осмотр',
     status: mode === 'appointment' ? 'Запланирован' : 'Назначен',
     diagnosis: [],
     treatment: '',
     notes: '',
     description: '',
-    ...initialData,
   });
 
   const [newDiagnosis, setNewDiagnosis] = useState('');
   const [duration, setDuration] = useState(30);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { addNotification } = useNotifications();
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      const safeFormatDate = (value: unknown): string => {
+        if (value instanceof Date) {
+          return format(value, 'HH:mm');
+        }
+        if (typeof value === 'string') {
+          return value;
+        }
+        return '';
+      };
+
+      const initialFormData = {
+        ...initialData,
+        startTime: safeFormatDate(initialData.startTime),
+        endTime: safeFormatDate(initialData.endTime),
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        type: initialFormData.type,
+        status: initialFormData.status,
+        diagnosis: initialFormData.diagnosis || [],
+        treatment: initialFormData.treatment || '',
+        notes: initialFormData.notes || '',
+        description: initialFormData.description || '',
+      }));
     }
   }, [initialData]);
 
@@ -211,22 +386,116 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateForm()) {
-      const appointmentData = {
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    setIsSaving(true);
+    try {
+      // Преобразуем данные формы с учетом необязательных полей
+      const formProcessableData: ExtendedAppointmentFormData = {
         ...formData,
-        patientId,
-        doctorId,
-        doctorName: doctor ? `${doctor.firstName} ${doctor.lastName}` : undefined,
+        patientId: initialPatientId || formData.patientId,
+        doctorId: initialDoctorId || formData.doctorId,
+        doctorName: doctor 
+          ? `${doctor.firstName} ${doctor.lastName}` 
+          : formData.doctorName,
       };
 
-      if (mode === 'appointment') {
-        onSave(appointmentData as Partial<Appointment>);
-      } else {
-        onSave(appointmentData as Partial<Visit>);
-      }
+      // Обработка данных
+      const processedData = processFormData(formProcessableData, doctor);
+
+      // Определяем, является ли данный тип Appointment или Visit
+      const { isAppointment, isVisit } = determineMedicalEntityType(processedData.type);
+
+      // Создаем уведомление о создании или изменении приёма
+      const processedEntity = isVisit 
+        ? convertToVisit(processedData) 
+        : convertToAppointment(processedData);
+
+      // Приведение типа для совместимости с onSave
+      const compatibleEntity = isVisit 
+        ? { ...processedEntity, status: processedEntity.status as AppointmentStatus }
+        : processedEntity;
+
+      const notification = NotificationService.createAppointmentChangeNotification(
+        compatibleEntity,
+        processedData.id ? 'updated' : 'created'
+      );
+      addNotification(notification);
+
+      // Вызываем onSave с обработанными данными
+      await onSave(compatibleEntity);
       onClose();
+    } catch (error) {
+      console.error('Ошибка при сохранении:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Произошла ошибка при сохранении приёма'
+      }));
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Функция обработки данных
+  const processFormData = (
+    formData: ExtendedAppointmentFormData, 
+    doctor?: Doctor
+  ): Partial<Appointment | Visit> => {
+    // Базовые преобразования времени
+    const processTime = (time: string | Date | undefined): string => {
+      if (!time) return format(new Date(), 'HH:mm');
+      return typeof time === 'string' 
+        ? time 
+        : format(time, 'HH:mm');
+    };
+
+    // Определение типа данных
+    const { 
+      isAppointment, 
+      isVisit, 
+      processedType 
+    } = determineMedicalEntityType(formData.type);
+
+    // Общие поля для Appointment и Visit
+    const baseData = {
+      id: formData.id || String(Date.now()),
+      patientId: formData.patientId || '',
+      patientName: formData.patientName || '',
+      doctorId: formData.doctorId || (doctor?.id || ''),
+      doctorName: formData.doctorName || (doctor ? `${doctor.firstName} ${doctor.lastName}` : ''),
+      date: formData.date || format(new Date(), 'yyyy-MM-dd'),
+      startTime: processTime(formData.startTime),
+      endTime: processTime(formData.endTime),
+      notes: formData.notes || '',
+      description: formData.description || '',
+      diagnosis: formData.diagnosis || [],
+      treatment: formData.treatment || '',
+    };
+
+    // Определение типа и статуса
+    if (isAppointment) {
+      return {
+        ...baseData,
+        type: processedType as AppointmentType,
+        status: (formData.status || 'Запланирован') as AppointmentStatus,
+      } as Partial<Appointment>;
+    }
+
+    if (isVisit) {
+      return {
+        ...baseData,
+        type: processedType as VisitType,
+        status: (formData.status || 'Назначен') as VisitStatus,
+      } as Partial<Visit>;
+    }
+
+    // Fallback к Appointment
+    return {
+      ...baseData,
+      type: 'Первичный приём' as AppointmentType,
+      status: 'Запланирован' as AppointmentStatus,
+    } as Partial<Appointment>;
   };
 
   return (
@@ -435,9 +704,9 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={loading}
+          disabled={loading || isSaving}
         >
-          {loading ? (
+          {loading || isSaving ? (
             <CircularProgress size={24} />
           ) : (
             initialData ? 'Сохранить' : 'Создать'
