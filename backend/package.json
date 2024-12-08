@@ -10,7 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "db:init": "ts-node src/database/initDb.ts"
+    "db:init": "ts-node src/database/initDb.ts",
+    "initdb": "ts-node src/database/initDb.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

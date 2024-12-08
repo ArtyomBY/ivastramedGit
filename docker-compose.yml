@@ -9,6 +9,7 @@ services:
       - REACT_APP_API_URL=http://localhost:5000
       - CHOKIDAR_USEPOLLING=true
       - WDS_SOCKET_PORT=0
+      - NODE_ENV=development
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules
@@ -18,6 +19,7 @@ services:
       - backend
     stdin_open: true
     tty: true
+    command: npm start
 
   backend:
     build: 
@@ -28,6 +30,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=5000
+      - JWT_SECRET=your_jwt_secret_key
+      - DB_HOST=92.53.105.112
+      - DB_PORT=3306
+      - DB_USER=gen_user
+      - DB_PASSWORD=0edMjCX^NIR+kp
+      - DB_NAME=default_db
     env_file:
       - ./backend/.env
     volumes:
