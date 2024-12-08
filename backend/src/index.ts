@@ -1,31 +1,23 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import patientRoutes from './routes/patient';
+import * as dotenv from 'dotenv';
+import app from './app';
 
+// Загружаем переменные окружения
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
+// Обработка необработанных исключений
+process.on('uncaughtException', (error: Error) => {
+    console.error('Необработанное исключение:', error);
+    process.exit(1);
+});
 
-// Подключение маршрутов
-app.use('/api/patients', patientRoutes);
+// Обработка необработанных отклонений промисов
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    console.error('Необработанное отклонение промиса:', reason);
+});
 
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`Сервер запущен на http://localhost:${PORT}`);
-});
-
-// Подключение к базе данных
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ivastrameds', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
-    console.log('Подключение к базе данных успешно');
-}).catch(err => {
-    console.error('Ошибка подключения к базе данных:', err);
 });

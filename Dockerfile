@@ -1,46 +1,49 @@
 # Build stage
-FROM node:20-alpine as builder
+FROM node:18-alpine as build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files for both frontend and backend
+# Copy package files
 COPY package*.json ./
+COPY frontend/package*.json ./frontend/
 COPY backend/package*.json ./backend/
 
 # Install dependencies
-RUN npm ci
-RUN cd backend && npm ci
+RUN npm run install:all
 
 # Copy source files
 COPY . .
 
-# Build backend
-RUN cd backend && npm run build
-
 # Build frontend
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm run build
+RUN npm run build:frontend
+
+# Build backend
+RUN npm run build:backend
 
 # Production stage
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy built files and production dependencies
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/backend/node_modules ./backend/node_modules
-COPY package*.json ./
-COPY backend/package*.json ./backend/
+# Copy built frontend
+COPY --from=build /app/frontend/build ./frontend/build
 
-# Set production environment
+# Copy backend files
+COPY --from=build /app/backend/dist ./backend/dist
+COPY --from=build /app/backend/package*.json ./backend/
+
+# Install production dependencies
+WORKDIR /app/backend
+RUN npm ci --only=production
+
+WORKDIR /app
+
+# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Expose the port
+# Expose port
 EXPOSE 3000
 
-# Start the backend server which will serve both API and static frontend
-CMD ["node", "backend/dist/server.js"]
+# Start the application
+CMD ["node", "backend/dist/index.js"]

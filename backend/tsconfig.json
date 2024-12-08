@@ -21,22 +21,23 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["src/*"]
     },
     "typeRoots": [
-      "./src/types",
-      "./node_modules/@types"
+      "./node_modules/@types",
+      "./src/types"
     ],
-    "types": ["node", "express"],
+    "types": ["node", "express", "jest"],
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "rootDir": "./src"
+    "rootDir": "."
   },
   "include": [
     "src/**/*.ts",
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules",

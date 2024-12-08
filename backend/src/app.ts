@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
 import path from 'path';
 import authRoutes from './routes/auth';
 import patientRoutes from './routes/patient';
@@ -11,14 +10,14 @@ import documentRoutes from './routes/document';
 import messageRoutes from './routes/message';
 import { errorHandler } from './middleware/errorHandler';
 
-dotenv.config();
-
 const app = express();
 
 // Настройка middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false // Отключаем CSP для разработки
+}));
 app.use(cors());
-app.use(compression()); // Проверено и исправлено использование compression
+app.use(compression()); 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,24 +29,14 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/messages', messageRoutes);
 
 // Раздача статических файлов фронтенда
-app.use(express.static(path.join(__dirname, '../../build')));
+app.use(express.static(path.resolve(__dirname, '../../frontend/build')));
 
 // Все остальные GET-запросы направляем на React приложение
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../build', 'index.html'));
+  res.sendFile(path.resolve(__dirname, '../../frontend/build/index.html'));
 });
 
 // Использование обработчика ошибок
 app.use(errorHandler);
-
-// Базовый маршрут
-// app.get('/', (req, res) => {
-//   res.send('Welcome to IvastRameds Backend!');
-// });
-
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
-// });
 
 export default app;
