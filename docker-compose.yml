@@ -2,40 +2,41 @@ services:
   frontend:
     build: 
       context: .
-      dockerfile: Dockerfile
-      target: frontend-build
+      dockerfile: frontend/Dockerfile
     ports:
       - "3000:3000"
     environment:
+      - REACT_APP_API_URL=http://localhost:5000
       - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=0
     volumes:
-      - ./frontend/src:/app/frontend/src
-      - ./frontend/public:/app/frontend/public
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
 
   backend:
     build: 
       context: .
-      dockerfile: Dockerfile
-      target: backend-build
+      dockerfile: backend/Dockerfile
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=development
+      - PORT=5000
+    env_file:
+      - ./backend/.env
     volumes:
-      - ./backend/src:/app/backend/src
-    depends_on:
-      - postgres
+      - ./backend:/app/backend
+      - /app/backend/node_modules
+    networks:
+      - app-network
+    command: npm run start
 
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: ivastrameds
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+networks:
+  app-network:
+    driver: bridge

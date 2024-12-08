@@ -43,6 +43,7 @@ COPY --from=frontend-build /app/frontend/build ./frontend/build
 # Copy backend build and dependencies
 COPY --from=backend-build /app/backend/dist ./backend/dist
 COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+COPY --from=backend-build /app/backend/package*.json ./backend/
 
 # Copy root package.json for scripts
 COPY package*.json ./
@@ -54,4 +55,4 @@ RUN npm install -g serve
 EXPOSE 3000 5000
 
 # Start command
-CMD ["npm", "run", "start:frontend"]
+CMD ["sh", "-c", "npm run start:backend & npm run start:frontend"]
