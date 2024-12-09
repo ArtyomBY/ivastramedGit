@@ -9,49 +9,42 @@ import PatientNavigation from '../../components/patient/PatientNavigation';
 
 // Моковые данные
 const mockPatientData = {
-  firstName: 'Иван',
-  lastName: 'Иванов',
-  middleName: 'Иванович',
-  phone: '+7 (999) 123-45-67',
-  email: 'ivan@example.com',
-  passport: '4444 555666',
-  oms: '1234567890123456',
-  address: 'г. Москва, ул. Примерная, д. 1, кв. 1',
-  birthDate: '01.01.1990',
-  gender: 'Мужской',
+  id: "1",
+  role: 'patient' as const, // Установлено значение 'patient' как строковый литерал
+  firstName: "Иван",
+  lastName: "Иванов",
+  middleName: "Иванович",
+  phone: "123456789",
+  email: "ivan.ivanov@example.com",
+  passport: "1234 567890",
+  oms: "1234567890123456",
+  address: "г. Москва, ул. Примерная, д. 1",
+  birthDate: "1990-01-01",
+  gender: "Мужской"
 };
 
-const mockMedicalRecords = [
-  {
-    id: '1',
-    date: '2023-06-15',
-    doctor: 'Петров П.П.',
-    specialization: 'Терапевт',
-    diagnosis: 'ОРВИ',
-    recommendations: 'Постельный режим, обильное питье',
-  },
-];
+const mockMedicalRecords = [{
+  diseaseHistory: [],
+  examinationResults: [],
+  documents: []
+}];
 
-const mockResearchResults = [
-  {
-    id: '1',
-    date: '2023-06-10',
-    type: 'Общий анализ крови',
-    doctor: 'Сидорова А.А.',
-    result: 'В пределах нормы',
-    files: ['blood_test_results.pdf'],
-  },
-];
+const mockResearchResults = [{
+  id: 1,
+  examinationType: "Общий анализ крови",
+  examinationDate: "2024-12-01",
+  result: "Норма",
+  doctorName: "Доктор Смирнов"
+}];
 
-const mockDocuments = [
-  {
-    id: '1',
-    title: 'Справка для бассейна',
-    date: '2023-06-01',
-    type: 'Справка',
-    url: '/documents/pool_certificate.pdf',
-  },
-];
+const mockDocuments = [{
+  id: 1,
+  documentType: "Рецепт",
+  documentNumber: "RX123456",
+  issueDate: "2024-12-01",
+  issuingAuthority: "Городская больница",
+  documentPath: "/documents/prescription.pdf"
+}];
 
 const mockAppointments = [
   {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Box, Typography, Button, Grid, Paper } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,8 @@ import LabTestDialog from '../../components/medical/LabTestDialog';
 import PatientSelector from '../../components/patients/PatientSelector';
 import { Visit, LabTest, Appointment, VisitType, VisitStatus } from '../../types/medical';
 import { User } from '../../types/auth';
+import { Patient } from '../../types/auth';
+import { isPatient } from '../../utils/typeGuards';
 import { format, addMinutes } from 'date-fns';
 
 const MedicalRecordsPage: React.FC = () => {
@@ -25,9 +27,15 @@ const MedicalRecordsPage: React.FC = () => {
   } = useMedical();
 
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [selectedPatientProfile, setSelectedPatientProfile] = useState<Partial<User> | null>(null);
+  const [selectedPatientProfile, setSelectedPatientProfile] = useState<Patient | null>(null);
   const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
   const [isLabTestDialogOpen, setIsLabTestDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (isPatient(user)) {
+      setSelectedPatientProfile(user);
+    }
+  }, [user]);
 
   const filteredVisits = visits.filter(
     (visit) => visit.patientId === selectedPatientId
@@ -87,6 +95,14 @@ const MedicalRecordsPage: React.FC = () => {
   const handleLabTestDialogOpen = () => {
     setIsLabTestDialogOpen(true);
   };
+
+  if (!user) {
+    return (
+      <Container>
+        <Typography>Пожалуйста, войдите в систему</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>

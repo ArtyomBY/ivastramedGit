@@ -1,317 +1,274 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
+  Box,
+  List,
+  ListItem,
+  ListItemText,
+  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import moment from 'moment';
-import 'moment/locale/ru';
+import { useAuth } from '../../contexts/AuthContext';
+import { Patient } from '../../types/auth';
+import { isPatient } from '../../utils/typeGuards';
+import api from '../../services/api';
 
-moment.locale('ru');
-
-interface PatientData {
-  firstName: string;
-  lastName: string;
-  middleName: string;
-  phone: string;
-  email: string;
-  passport: string;
-  oms: string;
-  address: string;
-  birthDate: string;
-  gender: string;
-}
-
-interface MedicalRecord {
-  id: string;
-  date: string;
-  doctor: string;
-  specialization: string;
+interface DiseaseHistory {
+  id: number;
   diagnosis: string;
-  recommendations: string;
+  startDate: string;
+  endDate?: string;
+  symptoms: string;
+  treatment: string;
+  status: 'active' | 'resolved' | 'chronic';
+  doctorName: string;
 }
 
-interface ResearchResult {
-  id: string;
-  date: string;
-  type: string;
-  doctor: string;
+interface ExaminationResult {
+  id: number;
+  examinationType: string;
+  examinationDate: string;
   result: string;
-  files?: string[];
+  doctorName: string;
+  attachments?: string;
 }
 
-interface Document {
-  id: string;
-  title: string;
-  date: string;
-  type: string;
-  url: string;
+interface MedicalDocument {
+  id: number;
+  documentType: string;
+  documentNumber: string;
+  issueDate: string;
+  expiryDate?: string;
+  issuingAuthority: string;
+  documentPath: string;
+}
+
+interface MedicalCardData {
+  diseaseHistory: DiseaseHistory[];
+  examinationResults: ExaminationResult[];
+  documents: MedicalDocument[];
 }
 
 interface MedicalCardProps {
-  patientData: PatientData;
-  medicalRecords: MedicalRecord[];
-  researchResults: ResearchResult[];
-  documents: Document[];
+  patientData: Patient;
+  medicalRecords: MedicalCardData[];
+  researchResults: ExaminationResult[];
+  documents: MedicalDocument[];
 }
 
-const MedicalCard: React.FC<MedicalCardProps> = ({
-  patientData,
-  medicalRecords,
-  researchResults,
-  documents,
-}) => {
-  const [selectedItem, setSelectedItem] = useState<MedicalRecord | ResearchResult | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [expanded, setExpanded] = useState<string>('personal');
+const MedicalCard: React.FC<MedicalCardProps> = ({ patientData, medicalRecords, researchResults, documents }) => {
+  const { user } = useAuth();
+  const [expanded, setExpanded] = useState<string | false>('personalInfo');
+  const [selectedDocument, setSelectedDocument] = useState<MedicalDocument | null>(null);
+  const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (isPatient(user)) {
+      // fetchMedicalData();
+    }
+  }, [user]);
 
   const handleAccordionChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpanded(isExpanded ? panel : '');
+    setExpanded(isExpanded ? panel : false);
   };
 
-  const handleViewDetails = (item: MedicalRecord | ResearchResult) => {
-    setSelectedItem(item);
-    setDialogOpen(true);
+  const handleDocumentClick = (document: MedicalDocument) => {
+    setSelectedDocument(document);
+    setIsDocumentDialogOpen(true);
   };
 
-  const handleDownload = (document: Document) => {
-    console.log('Downloading:', document);
-  };
+  if (!isPatient(user)) {
+    return <Typography>Доступ запрещен</Typography>;
+  }
 
-  const personalDataFields = [
-    { label: 'Фамилия', value: patientData.lastName },
-    { label: 'Имя', value: patientData.firstName },
-    { label: 'Отчество', value: patientData.middleName },
-    { label: 'Телефон', value: patientData.phone },
-    { label: 'Email', value: patientData.email },
-    { label: 'Паспорт', value: patientData.passport },
-    { label: 'Полис ОМС', value: patientData.oms },
-    { label: 'Адрес', value: patientData.address },
-    { label: 'Дата рождения', value: patientData.birthDate },
-    { label: 'Пол', value: patientData.gender },
-  ];
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('ru-RU');
+  };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h5" gutterBottom>
-        Электронная медицинская карта (ЭМК)
-      </Typography>
-      
-      <Accordion 
-        expanded={expanded === 'personal'} 
-        onChange={handleAccordionChange('personal')}
+    <Box sx={{ width: '100%', mt: 2 }}>
+      <Accordion
+        expanded={expanded === 'personalInfo'}
+        onChange={handleAccordionChange('personalInfo')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1">Личные данные</Typography>
+          <Typography variant="h6">Личные данные</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Grid container spacing={2}>
-            {personalDataFields.map((field, index) => (
-              <Grid item xs={12} sm={6} key={index}>
-                <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {field.label}
-                  </Typography>
-                  <Typography variant="body1">{field.value}</Typography>
-                </Box>
-              </Grid>
+          <List>
+            <ListItem>
+              <ListItemText
+                primary="ФИО"
+                secondary={`${patientData.lastName} ${patientData.firstName} ${patientData.middleName}`}
+              />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Дата рождения" secondary={patientData.birthDate} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Пол" secondary={patientData.gender} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Телефон" secondary={patientData.phone} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Email" secondary={patientData.email} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Паспорт" secondary={patientData.passport} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Полис ОМС" secondary={patientData.oms} />
+            </ListItem>
+            <ListItem>
+              <ListItemText primary="Адрес" secondary={patientData.address} />
+            </ListItem>
+          </List>
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion
+        expanded={expanded === 'diseaseHistory'}
+        onChange={handleAccordionChange('diseaseHistory')}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">История болезней</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <List>
+            {medicalRecords[0].diseaseHistory.map((disease) => (
+              <ListItem key={disease.id}>
+                <ListItemText
+                  primary={disease.diagnosis}
+                  secondary={
+                    <>
+                      <Typography component="span" variant="body2">
+                        Период: {formatDate(disease.startDate)} - {disease.endDate ? formatDate(disease.endDate) : 'по настоящее время'}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Симптомы: {disease.symptoms}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Лечение: {disease.treatment}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Статус: {disease.status}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Врач: {disease.doctorName}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
             ))}
-          </Grid>
+          </List>
         </AccordionDetails>
       </Accordion>
 
-      <Accordion 
-        expanded={expanded === 'history'} 
-        onChange={handleAccordionChange('history')}
+      <Accordion
+        expanded={expanded === 'examinations'}
+        onChange={handleAccordionChange('examinations')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1">История болезней</Typography>
+          <Typography variant="h6">Результаты исследований</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Дата</TableCell>
-                  <TableCell>Специализация</TableCell>
-                  <TableCell>Врач</TableCell>
-                  <TableCell>Диагноз</TableCell>
-                  <TableCell>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {medicalRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{moment(record.date).format('DD.MM.YYYY')}</TableCell>
-                    <TableCell>{record.specialization}</TableCell>
-                    <TableCell>{record.doctor}</TableCell>
-                    <TableCell>{record.diagnosis}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewDetails(record)}
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <List>
+            {researchResults.map((examination) => (
+              <ListItem key={examination.id}>
+                <ListItemText
+                  primary={examination.examinationType}
+                  secondary={
+                    <>
+                      <Typography component="span" variant="body2">
+                        Дата: {formatDate(examination.examinationDate)}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Результат: {examination.result}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Врач: {examination.doctorName}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
         </AccordionDetails>
       </Accordion>
 
-      <Accordion 
-        expanded={expanded === 'research'} 
-        onChange={handleAccordionChange('research')}
-      >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1">Результаты исследований</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Дата</TableCell>
-                  <TableCell>Тип исследования</TableCell>
-                  <TableCell>Врач</TableCell>
-                  <TableCell>Результат</TableCell>
-                  <TableCell>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {researchResults.map((result) => (
-                  <TableRow key={result.id}>
-                    <TableCell>{moment(result.date).format('DD.MM.YYYY')}</TableCell>
-                    <TableCell>{result.type}</TableCell>
-                    <TableCell>{result.doctor}</TableCell>
-                    <TableCell>{result.result}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewDetails(result)}
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </AccordionDetails>
-      </Accordion>
-
-      <Accordion 
-        expanded={expanded === 'documents'} 
+      <Accordion
+        expanded={expanded === 'documents'}
         onChange={handleAccordionChange('documents')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1">Документы</Typography>
+          <Typography variant="h6">Документы</Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <Grid container spacing={2}>
+          <List>
             {documents.map((document) => (
-              <Grid item xs={12} sm={6} md={4} key={document.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>
-                      {document.title}
-                    </Typography>
-                    <Typography color="textSecondary" gutterBottom>
-                      {moment(document.date).format('DD.MM.YYYY')}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {document.type}
-                    </Typography>
-                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDownload(document)}
-                      >
-                        <FileDownloadIcon />
-                      </IconButton>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+              <ListItem
+                key={document.id}
+                button
+                onClick={() => handleDocumentClick(document)}
+              >
+                <ListItemText
+                  primary={document.documentType}
+                  secondary={
+                    <>
+                      <Typography component="span" variant="body2">
+                        Номер: {document.documentNumber}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Дата выдачи: {formatDate(document.issueDate)}
+                      </Typography>
+                      <Typography component="span" variant="body2">
+                        Кем выдан: {document.issuingAuthority}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
             ))}
-          </Grid>
+          </List>
         </AccordionDetails>
       </Accordion>
 
       <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
+        open={isDocumentDialogOpen}
+        onClose={() => setIsDocumentDialogOpen(false)}
       >
-        <DialogTitle>
-          {'diagnosis' in (selectedItem || {})
-            ? 'Детали приема'
-            : 'Результаты исследования'}
-        </DialogTitle>
+        <DialogTitle>Просмотр документа</DialogTitle>
         <DialogContent>
-          {selectedItem && 'diagnosis' in selectedItem ? (
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>
-                Дата: {moment(selectedItem.date).format('DD.MM.YYYY')}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Врач: {selectedItem.doctor}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Специализация: {selectedItem.specialization}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Диагноз: {selectedItem.diagnosis}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Рекомендации: {selectedItem.recommendations}
-              </Typography>
-            </Box>
-          ) : selectedItem ? (
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>
-                Дата: {moment(selectedItem.date).format('DD.MM.YYYY')}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Тип исследования: {selectedItem.type}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Врач: {selectedItem.doctor}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Результат: {selectedItem.result}
-              </Typography>
-            </Box>
-          ) : null}
+          {selectedDocument && (
+            <>
+              <Typography variant="h6">{selectedDocument.documentType}</Typography>
+              <Typography>Номер: {selectedDocument.documentNumber}</Typography>
+              <Typography>Дата выдачи: {formatDate(selectedDocument.issueDate)}</Typography>
+              <Typography>Кем выдан: {selectedDocument.issuingAuthority}</Typography>
+              {/* Здесь можно добавить предпросмотр документа */}
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Закрыть</Button>
+          <Button onClick={() => setIsDocumentDialogOpen(false)}>Закрыть</Button>
+          {selectedDocument && (
+            <Button
+              onClick={() => window.open(selectedDocument.documentPath)}
+              color="primary"
+            >
+              Скачать
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

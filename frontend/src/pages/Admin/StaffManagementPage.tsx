@@ -25,25 +25,37 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, UserRole } from '../../types/auth';
+import { User, UserRole, Doctor, Admin, Registrar } from '../../types/auth';
+
+interface StaffFormData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  role: UserRole;
+  specialization: string;
+  phone: string;
+}
 
 const StaffManagementPage: React.FC = () => {
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<User | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StaffFormData>({
     email: '',
     password: '',
     firstName: '',
     lastName: '',
-    role: 'doctor' as UserRole,
+    middleName: '',
+    role: 'doctor',
     specialization: '',
     phone: '',
   });
 
   // В реальном приложении это будет загружаться с сервера
-  const [staffList, setStaffList] = useState<User[]>([]);
+  const [staffList, setStaffList] = useState<(Doctor | Admin | Registrar)[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +63,45 @@ const StaffManagementPage: React.FC = () => {
 
     try {
       // В реальном приложении здесь будет API-запрос
-      const newStaff = {
-        ...formData,
-        id: String(Date.now()),
-      };
+      let newStaff: Doctor | Admin | Registrar;
+      
+      switch (formData.role) {
+        case 'doctor':
+          newStaff = {
+            ...formData,
+            id: String(Date.now()),
+            role: 'doctor',
+            verified: false,
+          } as Doctor;
+          break;
+        case 'admin':
+          newStaff = {
+            id: String(Date.now()),
+            email: formData.email,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            middleName: formData.middleName,
+            role: 'admin',
+            phone: formData.phone,
+            verified: false,
+          } as Admin;
+          break;
+        case 'registrar':
+          newStaff = {
+            id: String(Date.now()),
+            email: formData.email,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            middleName: formData.middleName,
+            role: 'registrar',
+            phone: formData.phone,
+            verified: false,
+          } as Registrar;
+          break;
+        default:
+          throw new Error('Неверная роль');
+      }
+
       setStaffList([...staffList, newStaff]);
       setIsDialogOpen(false);
       resetForm();
@@ -67,16 +114,17 @@ const StaffManagementPage: React.FC = () => {
     setStaffList(staffList.filter(staff => staff.id !== staffId));
   };
 
-  const handleEdit = (staff: User) => {
+  const handleEdit = (staff: Doctor | Admin | Registrar) => {
     setEditingStaff(staff);
     setFormData({
       email: staff.email,
       password: '',
       firstName: staff.firstName,
       lastName: staff.lastName,
+      middleName: staff.middleName,
       role: staff.role,
-      specialization: staff.specialization || '',
-      phone: staff.phone || '',
+      specialization: 'specialization' in staff ? staff.specialization : '',
+      phone: staff.phone,
     });
     setIsDialogOpen(true);
   };
@@ -87,6 +135,7 @@ const StaffManagementPage: React.FC = () => {
       password: '',
       firstName: '',
       lastName: '',
+      middleName: '',
       role: 'doctor',
       specialization: '',
       phone: '',
@@ -143,9 +192,10 @@ const StaffManagementPage: React.FC = () => {
                   <TableCell>
                     {staff.role === 'doctor' ? 'Врач' :
                      staff.role === 'registrar' ? 'Регистратор' :
+                     staff.role === 'admin' ? 'Администратор' :
                      'Неизвестно'}
                   </TableCell>
-                  <TableCell>{staff.specialization}</TableCell>
+                  <TableCell>{'specialization' in staff ? staff.specialization : ''}</TableCell>
                   <TableCell>{staff.phone}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEdit(staff)}>
@@ -194,6 +244,11 @@ const StaffManagementPage: React.FC = () => {
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               />
+              <TextField
+                label="Отчество"
+                value={formData.middleName}
+                onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+              />
               <FormControl required>
                 <InputLabel>Роль</InputLabel>
                 <Select
@@ -203,6 +258,7 @@ const StaffManagementPage: React.FC = () => {
                 >
                   <MenuItem value="doctor">Врач</MenuItem>
                   <MenuItem value="registrar">Регистратор</MenuItem>
+                  <MenuItem value="admin">Администратор</MenuItem>
                 </Select>
               </FormControl>
               {formData.role === 'doctor' && (

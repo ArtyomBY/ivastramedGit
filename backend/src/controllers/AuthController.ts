@@ -26,6 +26,7 @@ export class AuthController {
 
   static async login(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
 
     try {
       const [rows] = await pool.execute<RowDataPacket[]>(
@@ -34,22 +35,33 @@ export class AuthController {
       );
 
       if (rows.length === 0) {
+        console.log('User not found for email:', email);
         res.status(401).json({ message: 'Invalid credentials' });
         return;
       }
 
       const user = rows[0];
-      const validPassword = await bcrypt.compare(password, user.password);
+
+      if (!user.is_active) {
+        console.log('User account is inactive for email:', email);
+        res.status(401).json({ message: 'Account is deactivated' });
+        return;
+      }
+
+      const validPassword = await bcrypt.compare(password, user.password_hash);
 
       if (!validPassword) {
+        console.log('Invalid password for email:', email);
         res.status(401).json({ message: 'Invalid credentials' });
         return;
       }
 
       const token = jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: '1h' });
+      console.log('Login successful for email:', email);
       res.json({ token });
     } catch (error) {
-      res.status(500).json({ message: 'Error logging in' });
+      console.error('Error during login:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 }

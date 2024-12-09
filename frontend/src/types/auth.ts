@@ -1,25 +1,58 @@
 export type UserRole = 'doctor' | 'patient' | 'admin' | 'registrar';
 
-export interface User {
+// Базовый интерфейс для всех пользователей
+interface BaseUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  middleName?: string;
+  middleName: string;
   role: UserRole;
-  specialization?: string;
-  phone?: string;
-  passport?: string;
-  oms?: string;
-  address?: string;
-  birthDate?: string;
-  gender?: string;
+  phone: string;
   verified?: boolean;
   avatarUrl?: string;
 }
 
+// Интерфейс для пациента
+export interface Patient extends BaseUser {
+  role: 'patient';
+  passport: string;
+  oms: string;
+  address: string;
+  birthDate: string;
+  gender: string;
+  medicalRecordNumber?: string;
+  bloodType?: string;
+  allergies?: string;
+  chronicDiseases?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+}
+
+// Интерфейс для врача
+export interface Doctor extends BaseUser {
+  role: 'doctor';
+  specialization: string;
+  education?: string;
+  experience?: string;
+  schedule?: string;
+}
+
+// Интерфейс для администратора
+export interface Admin extends BaseUser {
+  role: 'admin';
+}
+
+// Интерфейс для регистратора
+export interface Registrar extends BaseUser {
+  role: 'registrar';
+}
+
+// Объединенный тип для всех пользователей
+export type User = Patient | Doctor | Admin | Registrar;
+
 // Расширенный интерфейс для хранения пользователя с паролем
-export interface UserWithPassword extends User {
+export interface UserWithPassword extends BaseUser {
   password: string;
 }
 
@@ -49,12 +82,6 @@ export interface ScheduleAccessLevel {
 }
 
 export const roleAccessLevels: Record<UserRole, ScheduleAccessLevel> = {
-  admin: {
-    view: true,
-    editOwn: true,
-    editOthers: true,
-    makeAppointments: true,
-  },
   doctor: {
     view: true,
     editOwn: true,
@@ -67,10 +94,16 @@ export const roleAccessLevels: Record<UserRole, ScheduleAccessLevel> = {
     editOthers: false,
     makeAppointments: true,
   },
+  admin: {
+    view: true,
+    editOwn: true,
+    editOthers: true,
+    makeAppointments: true,
+  },
   registrar: {
     view: true,
     editOwn: false,
-    editOthers: false,
+    editOthers: true,
     makeAppointments: true,
   },
 };

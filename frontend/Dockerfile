@@ -1,15 +1,21 @@
 FROM node:18-alpine
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Copy package files
-COPY frontend/package*.json ./
+COPY package*.json ./
+
+# Install react-scripts explicitly
+RUN npm install react-scripts --legacy-peer-deps
 
 # Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy frontend source
-COPY frontend/ ./
+COPY . .
+
+# Build for production
+RUN npm run build
 
 # Expose port
 EXPOSE 3000

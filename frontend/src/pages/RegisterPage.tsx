@@ -9,6 +9,11 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types/auth';
@@ -18,6 +23,7 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -37,6 +43,7 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!formData.firstName || !formData.lastName || !formData.middleName || !formData.phone || !formData.passport || !formData.oms || !formData.address || !formData.birthDate || !formData.gender) {
       setError('Заполните все поля');
@@ -49,10 +56,20 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      await register(formData);
-      navigate('/login');
+      const { confirmPassword, ...registrationData } = formData;
+      const message = await register(registrationData);
+      setSuccess(message);
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка при регистрации');
+    }
+  };
+
+  const handleDateChange = (date: dayjs.Dayjs | null) => {
+    if (date) {
+      setFormData({ ...formData, birthDate: date.format('YYYY-MM-DD') });
     }
   };
 
@@ -74,7 +91,8 @@ const RegisterPage: React.FC = () => {
             </Button>
           </Box>
           <Divider sx={{ mb: 2 }} />
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
           <form onSubmit={handleSubmit}>
             <TextField
               label="Email"
@@ -150,14 +168,15 @@ const RegisterPage: React.FC = () => {
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
-            <TextField
-              label="Дата рождения"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              value={formData.birthDate}
-              onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+              <DatePicker
+                label="Дата рождения"
+                value={formData.birthDate ? dayjs(formData.birthDate) : null}
+                onChange={handleDateChange}
+                sx={{ width: '100%', mt: 2, mb: 1 }}
+                format="DD.MM.YYYY"
+              />
+            </LocalizationProvider>
             <TextField
               label="Пол"
               variant="outlined"

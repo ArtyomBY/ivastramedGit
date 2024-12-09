@@ -1,3 +1,6 @@
+-- Отключаем проверку внешних ключей для удаления таблиц
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- Удаление существующих таблиц, если они есть
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS chats;
@@ -5,16 +8,19 @@ DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS time_slots;
 DROP TABLE IF EXISTS doctor_schedule_exceptions;
 DROP TABLE IF EXISTS doctor_schedule_templates;
-DROP TABLE IF EXISTS medical_history;
-DROP TABLE IF EXISTS research_results;
-DROP TABLE IF EXISTS documents;
-DROP TABLE IF EXISTS emr;
+DROP TABLE IF EXISTS disease_history;
+DROP TABLE IF EXISTS examination_results;
+DROP TABLE IF EXISTS medical_documents;
+DROP TABLE IF EXISTS medical_records;
 DROP TABLE IF EXISTS doctors;
 DROP TABLE IF EXISTS patients;
 DROP TABLE IF EXISTS specializations;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS user_sessions;
 DROP TABLE IF EXISTS users;
+
+-- Включаем обратно проверку внешних ключей
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- Создание таблицы пользователей
 CREATE TABLE users (
@@ -194,3 +200,59 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Электронная медицинская карта
+CREATE TABLE medical_records (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  patient_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (patient_id) REFERENCES patients(id)
+);
+
+-- История болезней
+CREATE TABLE disease_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  medical_record_id INT NOT NULL,
+  diagnosis VARCHAR(255) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  symptoms TEXT,
+  treatment TEXT,
+  doctor_id INT,
+  status ENUM('active', 'resolved', 'chronic') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (medical_record_id) REFERENCES medical_records(id),
+  FOREIGN KEY (doctor_id) REFERENCES doctors(id)
+);
+
+-- Результаты исследований
+CREATE TABLE examination_results (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  medical_record_id INT NOT NULL,
+  examination_type VARCHAR(255) NOT NULL,
+  examination_date DATE NOT NULL,
+  result TEXT NOT NULL,
+  doctor_id INT,
+  attachments TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (medical_record_id) REFERENCES medical_records(id),
+  FOREIGN KEY (doctor_id) REFERENCES doctors(id)
+);
+
+-- Документы
+CREATE TABLE medical_documents (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  medical_record_id INT NOT NULL,
+  document_type VARCHAR(255) NOT NULL,
+  document_number VARCHAR(255),
+  issue_date DATE NOT NULL,
+  expiry_date DATE,
+  issuing_authority VARCHAR(255),
+  document_path TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (medical_record_id) REFERENCES medical_records(id)
+);

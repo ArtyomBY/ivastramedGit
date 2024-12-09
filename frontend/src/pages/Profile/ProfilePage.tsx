@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../../types/auth';
+import { isPatient, isDoctor } from '../../utils/typeGuards';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const ProfilePage: React.FC = () => {
@@ -28,13 +29,22 @@ const ProfilePage: React.FC = () => {
     middleName: user?.middleName || '',
     phone: user?.phone || '',
     email: user?.email || '',
-    passport: user?.passport || '',
-    oms: user?.oms || '',
-    address: user?.address || '',
-    birthDate: user?.birthDate || '',
-    gender: user?.gender || '',
     role: user?.role || '' as UserRole,
     verified: user?.verified || false,
+    // Дополнительные поля только для пациента
+    ...(isPatient(user) ? {
+      passport: user.passport,
+      oms: user.oms,
+      address: user.address,
+      birthDate: user.birthDate,
+      gender: user.gender,
+    } : {}),
+    // Дополнительные поля только для врача
+    ...(isDoctor(user) ? {
+      specialization: user.specialization,
+      education: user.education,
+      experience: user.experience,
+    } : {})
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +74,7 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box sx={{ mt: 4 }}>
         <Paper sx={{ p: 4 }}>
           <Grid container spacing={3}>
@@ -135,42 +145,66 @@ const ProfilePage: React.FC = () => {
                   {user.verified ? 'Верифицирован' : 'Не верифицирован'}
                 </Typography>
               </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Телефон
-                </Typography>
-                <Typography variant="body1">{user.phone}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Паспорт
-                </Typography>
-                <Typography variant="body1">{user.passport}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Полис ОМС
-                </Typography>
-                <Typography variant="body1">{user.oms}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Адрес
-                </Typography>
-                <Typography variant="body1">{user.address}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Дата рождения
-                </Typography>
-                <Typography variant="body1">{user.birthDate}</Typography>
-              </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Пол
-                </Typography>
-                <Typography variant="body1">{user.gender}</Typography>
-              </Box>
+              {isPatient(user) && (
+                <>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Паспорт
+                    </Typography>
+                    <Typography variant="body1">{user.passport}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Полис ОМС
+                    </Typography>
+                    <Typography variant="body1">{user.oms}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Адрес
+                    </Typography>
+                    <Typography variant="body1">{user.address}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Дата рождения
+                    </Typography>
+                    <Typography variant="body1">{user.birthDate}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Пол
+                    </Typography>
+                    <Typography variant="body1">{user.gender}</Typography>
+                  </Box>
+                </>
+              )}
+              {isDoctor(user) && (
+                <>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Специализация
+                    </Typography>
+                    <Typography variant="body1">{user.specialization}</Typography>
+                  </Box>
+                  {user.education && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" color="text.secondary">
+                        Образование
+                      </Typography>
+                      <Typography variant="body1">{user.education}</Typography>
+                    </Box>
+                  )}
+                  {user.experience && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" color="text.secondary">
+                        Опыт работы
+                      </Typography>
+                      <Typography variant="body1">{user.experience}</Typography>
+                    </Box>
+                  )}
+                </>
+              )}
             </Grid>
           </Grid>
         </Paper>
