@@ -20,5 +20,8 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
+# Disable SSL certificate verification
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+
 # Start command
 CMD ["npm", "start"]

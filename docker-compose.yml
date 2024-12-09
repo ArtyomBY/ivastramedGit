@@ -36,6 +36,7 @@ services:
       - DB_USER=gen_user
       - DB_PASSWORD=0edMjCX^NIR+kp
       - DB_NAME=default_db
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
     env_file:
       - ./backend/.env
     volumes:
