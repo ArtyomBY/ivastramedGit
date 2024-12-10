@@ -1,17 +1,27 @@
-# Use Node.js as base image
 FROM node:18-alpine
 
-# Install serve
-RUN npm install -g serve
-
-# Set working directory
 WORKDIR /app
 
-# Copy build files
-COPY build ./build
+# Copy package files
+COPY package*.json ./
+
+# Install react-scripts explicitly
+RUN npm install react-scripts --legacy-peer-deps
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy frontend source
+COPY . .
+
+# Build for production
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
 
+# Disable SSL certificate verification
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+
 # Start command
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["npm", "start"]
